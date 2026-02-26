@@ -19,7 +19,7 @@ class WeatherAPIClient:
     def __init__(self):
         self.api_key = settings.WEATHER_API_KEY
         self.base_url = settings.WEATHER_API_BASE_URL
-        self.timeout = 10
+        self.timeout = 3  # Reduced timeout to 3 seconds
         
     def fetch_current_weather(self, latitude: float, longitude: float) -> Optional[Dict]:
         """Fetch current weather data from API."""
