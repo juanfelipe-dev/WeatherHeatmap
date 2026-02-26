@@ -7,7 +7,7 @@ services:
       pip install -r requirements.txt &&
       python manage.py migrate &&
       python manage.py collectstatic --noinput
-    startCommand: bash run_start.sh
+    startCommand: python manage.py migrate && python manage.py collectstatic --noinput && python manage.py load_us_cities && gunicorn heatmap_project.wsgi:application
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
