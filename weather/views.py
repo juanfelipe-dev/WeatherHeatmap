@@ -15,7 +15,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer
-from .models import WeatherData, WeatherForecast, WeatherAlert  # Location model not used in map view when hardcoding cities
+from .models import WeatherData, WeatherForecast, WeatherAlert, Location  # importing Location for potential use (index view/API)
+
 from .services import WeatherService
 
 logger = logging.getLogger(__name__)
@@ -170,19 +171,23 @@ US_CITIES = [
 
 def index(request):
     """Overview page with cards and statistics (dashboard alternative)."""
-    # still read locations from DB if desired, but map doesn't depend on them
-    locations = Location.objects.filter(is_active=True)
-
-    # Get current weather for all locations (optional DB data)
+    # optionally read locations from DB, but ignore errors if database missing
+    locations = []
     current_weather = {}
-    for location in locations:
-        weather = location.weather_data.filter(is_current=True).first()
-        if weather:
-            current_weather[location.id] = {
-                'temperature': weather.temperature,
-                'condition': weather.condition,
-                'humidity': weather.humidity,
-            }
+    try:
+        locations = Location.objects.filter(is_active=True)
+        for location in locations:
+            weather = location.weather_data.filter(is_current=True).first()
+            if weather:
+                current_weather[location.id] = {
+                    'temperature': weather.temperature,
+                    'condition': weather.condition,
+                    'humidity': weather.humidity,
+                }
+    except Exception:
+        # database might not exist or be inaccessible; just show empty lists
+        locations = []
+        current_weather = {}
 
     context = {
         'locations': locations,
