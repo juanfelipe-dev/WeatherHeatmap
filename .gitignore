@@ -1,0 +1,75 @@
+# Environment and Configuration
+*.env
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+/static
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+.env
+.vscode
+
+# Logs
+logs/
+*.log
+
+# Database
+*.sqlite
+*.sqlite3
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Node (if using)
+node_modules/
+npm-debug.log
+
+# Celery
+celerybeat-schedule
+
+# Secrets
+secrets.json
+.env.production

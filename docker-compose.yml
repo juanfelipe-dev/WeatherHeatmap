@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: heatmap_db
+      POSTGRES_USER: heatmap_user
+      POSTGRES_PASSWORD: heatmap_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U heatmap_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Django Application
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://heatmap_user:heatmap_password@db:5432/heatmap_db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - WEATHER_API_KEY=${WEATHER_API_KEY:-}
+      - ARCGIS_API_KEY=${ARCGIS_API_KEY:-}
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Celery Worker (optional)
+  celery:
+    build: .
+    command: celery -A heatmap_project worker -l info
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://heatmap_user:heatmap_password@db:5432/heatmap_db
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - WEATHER_API_KEY=${WEATHER_API_KEY:-}
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  postgres_data:

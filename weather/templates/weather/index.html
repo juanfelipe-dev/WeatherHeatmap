@@ -1,0 +1,140 @@
+{% extends 'weather/base.html' %}
+{% load static %}
+
+{% block title %}Weather Overview{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8 col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-cloud-sun"></i> Current Weather Overview
+        </h1>
+    </div>
+    <div class="col-md-4 col-12 text-md-end mt-3 mt-md-0">
+        <a href="{% url 'weather:dashboard' %}" class="btn btn-primary">
+            <i class="fas fa-map"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Weather Cards Grid -->
+{% if locations %}
+    <div class="row">
+        {% for location in locations %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card weather-card h-100 shadow-sm">
+                    <div class="card-header bg-gradient">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-map-marker-alt"></i> {{ location.name }}
+                        </h5>
+                        <small class="text-muted">
+                            {{ location.city }}{% if location.country %}, {{ location.country }}{% endif %}
+                        </small>
+                    </div>
+                    <div class="card-body">
+                        {% if location.weather_data.all %}
+                            {% with weather=location.weather_data.first %}
+                                <div class="weather-info">
+                                    <!-- Temperature -->
+                                    <div class="mb-3">
+                                        <div class="temperature-display">
+                                            <span class="temperature">{{ weather.temperature|floatformat:1 }}°C</span>
+                                            <span class="fahrenheit">({{ weather.temperature_fahrenheit|floatformat:1 }}°F)</span>
+                                        </div>
+                                        {% if weather.feels_like %}
+                                            <small class="text-muted">Feels like {{ weather.feels_like|floatformat:1 }}°C</small>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Condition -->
+                                    <div class="mb-3">
+                                        <span class="condition-badge condition-{{ weather.condition }}">
+                                            {{ weather.condition|upper }}
+                                        </span>
+                                        <p class="condition-description">{{ weather.condition_description|capfirst }}</p>
+                                    </div>
+                                    
+                                    <!-- Weather Details -->
+                                    <div class="weather-details">
+                                        <div class="detail-item">
+                                            <i class="fas fa-droplet"></i>
+                                            <span class="label">Humidity</span>
+                                            <span class="value">{{ weather.humidity }}%</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <i class="fas fa-wind"></i>
+                                            <span class="label">Wind</span>
+                                            <span class="value">{{ weather.wind_speed|floatformat:1 }} m/s</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <i class="fas fa-compress"></i>
+                                            <span class="label">Pressure</span>
+                                            <span class="value">{{ weather.pressure }} hPa</span>
+                                        </div>
+                                        {% if weather.cloudiness %}
+                                            <div class="detail-item">
+                                                <i class="fas fa-cloud"></i>
+                                                <span class="label">Clouds</span>
+                                                <span class="value">{{ weather.cloudiness }}%</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <!-- Timestamp -->
+                                    <div class="mt-3 pt-3 border-top">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock"></i> Updated: {{ weather.timestamp|date:"M d, Y H:i" }}
+                                        </small>
+                                    </div>
+                                </div>
+                            {% endwith %}
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> No weather data available
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer bg-light">
+                        <a href="{% url 'weather:dashboard' %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-map"></i> View on Map
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No locations configured. Please add locations in the admin panel.
+    </div>
+{% endif %}
+
+<!-- Stats Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h2 class="mb-4">Statistics</h2>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="stat-card">
+            <div class="stat-value">{{ locations|length }}</div>
+            <div class="stat-label">Active Locations</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="stat-card">
+            <div class="stat-value">{{ current_weather|length }}</div>
+            <div class="stat-label">With Current Data</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'weather/ui.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const currentWeatherData = JSON.parse('{{ current_weather|escapejs }}');
+    console.log('Current weather data:', currentWeatherData);
+});
+</script>
+{% endblock %}
