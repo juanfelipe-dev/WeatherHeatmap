@@ -215,10 +215,11 @@ def weather_map(request):
 
     for city in US_CITIES:
         # Use placeholder data for immediate rendering
+        temp = 20 + (hash(city['name']) % 20 - 10)  # Pseudo-random temp 10-30°C
         props = {
             'name': city['name'],
             'country': city.get('country', ''),
-            'temperature': 20 + (hash(city['name']) % 20 - 10),  # Pseudo-random temp 10-30°C
+            'temperature': temp,
             'feels_like': 19,
             'condition': 'clear',
             'condition_description': 'loading...',
@@ -227,7 +228,7 @@ def weather_map(request):
             'wind_speed': 5,
             'cloudiness': 20,
             'timestamp': datetime.now().isoformat(),
-            'color': '#FFD700',  # Gold for placeholder
+            'color': get_temperature_color(temp),  # Use real color function
             'icon': '🔄',  # Loading indicator
         }
         
