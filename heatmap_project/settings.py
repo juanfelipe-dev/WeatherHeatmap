@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -83,6 +84,10 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
+# In production we require DATABASE_URL to be set. Fail fast if not provided.
+if not DEBUG and not os.getenv('DATABASE_URL'):
+    raise ImproperlyConfigured('DATABASE_URL environment variable is required in production')
 
 
 # Password validation
