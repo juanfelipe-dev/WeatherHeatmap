@@ -49,7 +49,7 @@ class OpenWeatherMapClient(WeatherAPIClient):
             Dictionary with weather data or None if request fails
         """
         if not self.api_key:
-            logger.warning("WEATHER_API_KEY not configured")
+            logger.error(f"WEATHER_API_KEY is not configured - cannot fetch weather")
             return None
             
         url = f"{self.base_url}/weather"
@@ -63,9 +63,13 @@ class OpenWeatherMapClient(WeatherAPIClient):
         try:
             response = requests.get(url, params=params, timeout=self.timeout)
             response.raise_for_status()
+            logger.debug(f"Successfully fetched weather for ({latitude}, {longitude})")
             return response.json()
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error fetching weather ({latitude}, {longitude}): {response.status_code} - {response.text}")
+            return None
         except requests.RequestException as e:
-            logger.error(f"Error fetching weather data: {e}")
+            logger.error(f"Error fetching weather data for ({latitude}, {longitude}): {e}")
             return None
     
     def fetch_forecast(self, latitude: float, longitude: float, days: int = 5) -> Optional[List[Dict]]:

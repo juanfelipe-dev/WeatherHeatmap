@@ -4,6 +4,7 @@ Views for weather application.
 
 import json
 import logging
+from datetime import datetime
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -177,52 +178,76 @@ def index(request):
 
 
 def weather_map(request):
-    """Dashboard map view with interactive heatmap and sidebar."""
-    locations = Location.objects.filter(is_active=True)
-    alerts = WeatherAlert.objects.filter(is_active=True)
+    """Dashboard map view driven by a hard-coded list of cities and live API data."""
+    from django.conf import settings
     
-    # Prepare GeoJSON data for map
+    # Log API key status for debugging
+    has_api_key = bool(settings.WEATHER_API_KEY)
+    logger.info(f"weather_map: WEATHER_API_KEY present={has_api_key}")
+    
+    service = WeatherService()
     features = []
-    for location in locations:
-        weather = location.weather_data.filter(is_current=True).first()
-        if weather:
-            temp_color = get_temperature_color(weather.temperature)
-            features.append({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [location.longitude, location.latitude]
-                },
-                'properties': {
-                    'id': location.id,
-                    'name': location.name,
-                    'country': location.country or '',
-                    'temperature': weather.temperature,
-                    'feels_like': weather.feels_like,
-                    'condition': weather.condition,
-                    'condition_description': weather.condition_description,
-                    'humidity': weather.humidity,
-                    'pressure': weather.pressure,
-                    'wind_speed': weather.wind_speed,
-                    'cloudiness': weather.cloudiness,
-                    'timestamp': weather.timestamp.isoformat(),
-                    'color': temp_color,
-                    'icon': get_weather_icon(weather.condition),
-                }
-            })
-    
+    alerts = []
+
+    for city in US_CITIES:
+        raw = service.client.fetch_current_weather(city['latitude'], city['longitude'])
+        if not raw:
+            logger.warning(f"Failed to fetch weather for {city['name']} - adding placeholder")
+            # Show marker with placeholder if API fails
+            props = {
+                'name': city['name'],
+                'country': city.get('country', ''),
+                'temperature': None,
+                'feels_like': None,
+                'condition': 'unknown',
+                'condition_description': 'Data unavailable',
+                'humidity': None,
+                'pressure': None,
+                'wind_speed': None,
+                'cloudiness': None,
+                'timestamp': datetime.now().isoformat(),
+                'color': '#999',
+                'icon': '❓',
+            }
+        else:
+            main = raw.get('main', {})
+            weather_info = raw.get('weather', [{}])[0]
+            temp = main.get('temp')
+            props = {
+                'name': city['name'],
+                'country': city.get('country', ''),
+                'temperature': temp,
+                'feels_like': main.get('feels_like'),
+                'condition': weather_info.get('main', '').lower(),
+                'condition_description': weather_info.get('description', ''),
+                'humidity': main.get('humidity'),
+                'pressure': main.get('pressure'),
+                'wind_speed': raw.get('wind', {}).get('speed'),
+                'cloudiness': raw.get('clouds', {}).get('all'),
+                'timestamp': datetime.utcfromtimestamp(raw.get('dt', 0)).isoformat(),
+                'color': get_temperature_color(temp) if temp is not None else '#888',
+                'icon': get_weather_icon(weather_info.get('main', '').lower()),
+            }
+        
+        features.append({
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Point',
+                'coordinates': [city['longitude'], city['latitude']],
+            },
+            'properties': props,
+        })
+
     geojson_data = {
         'type': 'FeatureCollection',
-        'features': features
+        'features': features,
     }
-    
+
     context = {
-        'locations': locations,
         'geojson_data': json.dumps(geojson_data),
         'alerts': alerts,
         'arcgis_api_key': settings.ARCGIS_API_KEY,
     }
-    
     return render(request, 'weather/weather_map.html', context)
 
 
